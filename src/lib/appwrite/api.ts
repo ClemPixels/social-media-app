@@ -19,7 +19,7 @@ export async function createUserAccount(user: INewUser) {
 
     if (!newAccount) throw Error;
 
-    const avatarUrl = avatars.getInitials(user.name);
+    const avatarUrl = avatars.getInitials(user.name).toString();
 
     const newUser = await saveUserToDB({
       accountId: newAccount.$id,
@@ -41,7 +41,7 @@ export async function saveUserToDB(user: {
   accountId: string;
   email: string;
   name: string;
-  imageUrl: URL;
+  imageUrl: string;
   username?: string;
 }) {
   try {
@@ -126,9 +126,10 @@ export async function createPost(post: INewPost) {
     if (!uploadedFile) throw Error;
 
     // Get file url
-    const fileUrl = getFilePreview(uploadedFile.$id);
+    // const fileUrl = getFilePreview(uploadedFile.$id);
+    const fileUrl = getFilePreview(uploadedFile.imageUrl);
     if (!fileUrl) {
-      await deleteFile(uploadedFile.$id);
+      // await deleteFile(uploadedFile.$id);
       throw Error;
     }
 
@@ -161,36 +162,61 @@ export async function createPost(post: INewPost) {
   }
 }
 
+// ============================== UPLOAD TO CLOUDINARY
+export async function uploadToCloudinary(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", "CLM_Snapgram");
+
+  const res = await fetch(
+    "https://api.cloudinary.com/v1_1/dv1nu9l6y/image/upload",
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+
+  if (!res.ok) throw new Error("Cloudinary upload failed");
+  const data = await res.json();
+  return data.secure_url;
+}
+
 // ============================== UPLOAD FILE
 export async function uploadFile(file: File) {
   try {
-    const uploadedFile = await storage.createFile(
-      appwriteConfig.storageId,
-      ID.unique(),
-      file
-    );
+    // const uploadedFile = await storage.createFile(
+    //   appwriteConfig.storageId,
+    //   ID.unique(),
+    //   file
+    // );
 
-    return uploadedFile;
+    // return uploadedFile;
+
+    const imageUrl = await uploadToCloudinary(file);
+
+    // Fake a similar object for consistency
+    return { $id: "", imageUrl };
   } catch (error) {
     console.log(error);
   }
 }
 
 // ============================== GET FILE URL
-export function getFilePreview(fileId: string) {
+export function getFilePreview(fileIdOrUrl: string) {
   try {
-    const fileUrl = storage.getFilePreview(
-      appwriteConfig.storageId,
-      fileId,
-      2000,
-      2000,
-      "top",
-      100
-    );
+    // const fileUrl = storage.getFilePreview(
+    //   appwriteConfig.storageId,
+    //   fileId,
+    //   2000,
+    //   2000,
+    //   "top",
+    //   100
+    // );
 
-    if (!fileUrl) throw Error;
+    // if (!fileUrl) throw Error;
 
-    return fileUrl;
+    // return fileUrl;
+    return fileIdOrUrl;
   } catch (error) {
     console.log(error);
   }
@@ -281,9 +307,10 @@ export async function updatePost(post: IUpdatePost) {
       if (!uploadedFile) throw Error;
 
       // Get new file url
-      const fileUrl = getFilePreview(uploadedFile.$id);
+      // const fileUrl = getFilePreview(uploadedFile.$id);
+      const fileUrl = getFilePreview(uploadedFile.imageUrl);
       if (!fileUrl) {
-        await deleteFile(uploadedFile.$id);
+        // await deleteFile(uploadedFile.$id);
         throw Error;
       }
 
@@ -502,9 +529,9 @@ export async function updateUser(user: IUpdateUser) {
       if (!uploadedFile) throw Error;
 
       // Get new file url
-      const fileUrl = getFilePreview(uploadedFile.$id);
+      const fileUrl = getFilePreview(uploadedFile.imageUrl);
       if (!fileUrl) {
-        await deleteFile(uploadedFile.$id);
+        // await deleteFile(uploadedFile.$id);
         throw Error;
       }
 

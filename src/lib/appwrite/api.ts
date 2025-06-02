@@ -19,7 +19,7 @@ export async function createUserAccount(user: INewUser) {
 
     if (!newAccount) throw Error;
 
-    const avatarUrl = avatars.getInitials(user.name).toString();
+    const avatarUrl = avatars.getInitials(user.name);
 
     const newUser = await saveUserToDB({
       accountId: newAccount.$id,
@@ -41,7 +41,7 @@ export async function saveUserToDB(user: {
   accountId: string;
   email: string;
   name: string;
-  imageUrl: string;
+  imageUrl: URL;
   username?: string;
 }) {
   try {
@@ -314,7 +314,11 @@ export async function updatePost(post: IUpdatePost) {
         throw Error;
       }
 
-      image = { ...image, imageUrl: fileUrl, imageId: uploadedFile.$id };
+      image = {
+        ...image,
+        imageUrl: new URL(fileUrl),
+        imageId: uploadedFile.$id,
+      };
     }
 
     // Convert tags into array
